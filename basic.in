@@ -1,0 +1,9 @@
+class basic
+	method print(arg)
+		printf(arg)
+	end method
+
+	method getline()
+		getchar()
+	end method
+end class
