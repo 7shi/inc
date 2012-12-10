@@ -10,19 +10,32 @@ enum Token { Word, Num, Str, Other };
 class Lexer {
 private:
     FILE *file;
-    int cur;
+    int cur = -1;
+    string src;
+    int curline = 1;
 
 public:
-    Token type;
+    Token type = Other;
     string token;
+    int line = 1;
 
     Lexer(FILE *file): file(file) {
-        cur = fgetc(file);
+        if (file) cur = fgetc(file);
+    }
+
+    Lexer(const string &src): src(src) {
+        file = fopen(src.c_str(), "r");
+        if (file) cur = fgetc(file);
+    }
+
+    ~Lexer() {
+        if (!src.empty() && file) fclose(file);
     }
 
     int readc() {
         if (cur < 0) return cur;
         cur = fgetc(file);
+        if (cur == '\n') ++curline;
         return cur;
     }
 
@@ -41,6 +54,7 @@ public:
     }
 
     bool read() {
+        line = curline;
         while (cur >= 0) {
             if (isalpha(cur))
                 return read(Word, isletter);
@@ -83,13 +97,10 @@ private:
 };
 
 void parse(const string &src) {
-    FILE *f = fopen(src.c_str(), "r");
-    if (!f) return;
-    Lexer lexer(f);
+    Lexer lexer(src);
     while (lexer.read()) {
-        printf("%d:%s\n", lexer.type, lexer.token.c_str());
+        printf("%s:%d %d:%s\n", src.c_str(), lexer.line, lexer.type, lexer.token.c_str());
     }
-    fclose(f);
 }
 
 int main(int argc, char *argv[])
