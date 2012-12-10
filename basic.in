@@ -1,6 +1,6 @@
 class basic
-	method print(arg)
-		printf(arg)
+	method println(arg)
+		puts(arg)
 	end method
 
 	method getline()

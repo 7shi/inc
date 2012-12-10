@@ -1,2 +1,2 @@
-import "msvcrt.dll" cdecl printf
+import "msvcrt.dll" cdecl puts
 import "msvcrt.dll" cdecl getchar
