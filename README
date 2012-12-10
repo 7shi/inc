@@ -1,0 +1,6 @@
+usage:
+
+$ make
+$ ./inc main.in basic.in windows.in
+$ ./output
+Ola mundo

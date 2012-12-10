@@ -112,7 +112,7 @@ public:
     void select();
     DWORD align(DWORD size);
     DWORD falign(DWORD size);
-    Address sym(const std::string &s);
+    Address sym(const std::string &s, bool create = false);
     Address str(const std::string &s);
     Address ptr(const std::string &s, const Address &ptr);
     Address alloc(const std::string &s, size_t size);

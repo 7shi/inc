@@ -228,9 +228,13 @@ DWORD PE::falign(DWORD size) {
     return ::align(size, oph->FileAlignment);
 }
 
-Address PE::sym(const string &s) {
+Address PE::sym(const string &s, bool create) {
     auto it = syms.find(s);
-    return it == syms.end() ? Address() : it->second;
+    if (it != syms.end()) return it->second;
+    if (!create) return Address();
+    Address ret(0);
+    syms[s] = ret;
+    return ret;
 }
 
 Address PE::str(const string &s) {
@@ -333,13 +337,13 @@ void PE::write(FILE *f) {
 Address PE::import(const string &dll, const string &sym) {
     auto it = imports.find(dll);
     if (it == imports.end()) {
-        Address ret(0, Abs);
+        Address ret(0);
         imports[dll][sym] = ret;
         return ret;
     }
     auto it2 = it->second.find(sym);
     if (it2 == it->second.end()) {
-        Address ret(0, Abs);
+        Address ret(0);
         it->second[sym] = ret;
         return ret;
     }

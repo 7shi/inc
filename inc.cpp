@@ -2,49 +2,23 @@
 
 using namespace std;
 
-int main()
-{
-    auto f = fopen("label.exe", "wb");
-    if (!f) return 1;
+static PE pe;
 
-    PE pe;
+int main(int argc, char *argv[])
+{
     pe.select();
 
-/*
-.intel_syntax
-    mov ebx, 0
-    jmp label2
-label1:
-    push ebx
-    push "%d\n"
-    call printf
-    add esp, 8
-label2:
-    inc ebx
-    cmp ebx, 10
-    jnz label1
-    push 0
-    call exit
-0:  jmp 0b
-.data
-format: .ascii "%d\10\0"
-*/
-    mov(ebx, 0);
-    Address label2(0, Abs);
-    jmp(label2);
-    auto label1 = curtext->addr();
-    push(ebx);
-    push(pe.str("%d\n"));
-    call(ptr[pe.import("msvcrt.dll", "printf")]);
-    add(esp, 8);
-    curtext->put(label2);
-    inc(ebx);
-    cmp(ebx, 10);
-    jnz(label1);
-    push(0);
+    auto _main = pe.sym("main", true);
+    call(_main);
+    push(eax);
     call(ptr[pe.import("msvcrt.dll", "exit")]);
     jmp(curtext->addr());
+    
+    curtext->put(_main);
+    ret();
 
+    auto f = fopen("output.exe", "wb");
+    if (!f) return 1;
     pe.write(f);
     fclose(f);
 }
