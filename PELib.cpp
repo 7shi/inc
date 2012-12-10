@@ -138,6 +138,7 @@ PE::PE()
 
 void PE::init() {
     sections.clear();
+    sects.clear();
     stub.clear();
     imports.clear();
     syms.clear();
@@ -278,10 +279,10 @@ Address PE::dword(const string &s, DWORD val) {
     return ret;
 }
 
-void PE::write(FILE *f) {
+void PE::link() {
+    sects.clear();
     mkidata();
     DWORD rva = oph->SectionAlignment;
-    vector<Section *> sects;
     for (int i = 0; i < sections.size(); i++) {
         auto sect = &sections[i];
         auto size = sect->size();
@@ -296,6 +297,7 @@ void PE::write(FILE *f) {
             sect->h.VirtualAddress = 0;
         }
     }
+
     fh->NumberOfSections = sects.size();
     oph->BaseOfCode = text->h.VirtualAddress;
     oph->SizeOfCode = falign(text->size());
@@ -308,6 +310,10 @@ void PE::write(FILE *f) {
         + sizeof(IMAGE_SECTION_HEADER) * sects.size());
     oph->DataDirectory[1].VirtualAddress = idata->h.VirtualAddress;
     oph->DataDirectory[1].Size = idata->size();
+}
+
+void PE::write(FILE *f) {
+    if (sects.empty()) link();
 
     Buffer header;
     header << &dosh << stub;

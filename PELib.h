@@ -101,6 +101,7 @@ private:
     IMAGE_FILE_HEADER *fh;
     IMAGE_OPTIONAL_HEADER32 *oph;
     std::vector<Section> sections;
+    std::vector<Section *> sects;
     Section *text, *data, *bss, *rdata, *idata;
     std::map<std::string, std::map<std::string, Address>> imports;
     std::map<std::string, Address> syms;
@@ -117,6 +118,7 @@ public:
     Address ptr(const std::string &s, const Address &ptr);
     Address alloc(const std::string &s, size_t size);
     Address dword(const std::string &s, DWORD val);
+    void link();
     void write(std::FILE *f);
     Address import(const std::string &dll, const std::string &sym);
 
