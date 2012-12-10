@@ -96,6 +96,34 @@ private:
     }
 };
 
+string getstr(string s) {
+    if (s.size() >= 2 && s[0] == '"' && s[1] == '"')
+        s = s.substr(1, s.size() - 2);
+    string ret;
+    bool esc = false;
+    for (size_t i = 0; i < s.size(); i++) {
+        char ch = s[i];
+        if (esc) {
+            switch (ch) {
+            case 'a': ret += '\a'; break;
+            case 'b': ret += '\b'; break;
+            case 'n': ret += '\n'; break;
+            case 'f': ret += '\f'; break;
+            case 't': ret += '\t'; break;
+            case 'v': ret += '\v'; break;
+            case '0': ret += '\0'; break;
+            default : ret += ch  ; break;
+            }
+            esc = false;
+        }
+        else if (ch == '\\')
+            esc = true;
+        else
+            ret += ch;
+    }
+    return ret;
+}
+
 void parse(const string &src) {
     Lexer lexer(src);
     while (lexer.read()) {
