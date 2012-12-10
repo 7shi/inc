@@ -1,6 +1,11 @@
-usage:
+Simple Compiler for Windows (x86)
+=================================
 
-$ make
-$ ./inc main.in basic.in windows.in
-$ ./output
-Ola mundo
+This software is in the public domain.
+
+## usage (in MSYS)
+
+    $ make
+    $ ./inc main.in basic.in windows.in
+    $ ./output
+    Ola mundo
