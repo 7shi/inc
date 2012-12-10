@@ -1,5 +1,5 @@
 function main()
-	basic'print "Ola mundo"
-	basic'getline
+	basic'print("Ola mundo")
+	basic'getline()
 	return 0
 end function
