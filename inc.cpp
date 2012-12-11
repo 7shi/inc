@@ -54,10 +54,10 @@ class Lexer {
 private:
     FILE *file;
     int cur = 0;
-    string src;
     int curline = 1, curcol = 0;
 
 public:
+    string src;
     Token type = Other;
     string token;
     int line = 1, column = 0;
@@ -180,14 +180,81 @@ string getstr(string s) {
     return ret;
 }
 
-void parse(const string &src) {
-    Lexer lexer(src);
-    while (lexer.read()) {
-        printf("%s[%d,%d] %d:%s\n",
-            src.c_str(), lexer.line, lexer.column,
-            lexer.type, lexer.token.c_str());
+class Parser {
+private:
+    Lexer lexer;
+    Token type;
+    string token;
+
+public:
+    Parser(const string &src): lexer(src) {}
+
+    void parse() {
+        while (read()) {
+            if (token == "function")
+                parseFunction();
+            else
+                die("error: %s", token.c_str());
+        }
     }
-}
+
+    void die(const char *format, ...) {
+        va_list arg;
+        va_start(arg, format);
+        vdie(lexer.src, lexer.line, lexer.column, format, arg);
+        va_end(arg);
+    }
+
+private:
+    bool read() {
+        if (!lexer.read()) return false;
+        type = lexer.type;
+        token = lexer.token;
+        return true;
+    }
+
+    void parseFunction() {
+        if (!read() || type != Word)
+            die("function: name required");
+        curtext->put(func(token));
+        auto args = parseFunctionArgs();
+        while (read()) {
+            if (token == "end") {
+                if (read() && token == "function") {
+                    ret();
+                    return;
+                }
+                die("end: 'function' required");
+            }
+            else
+                die("error: %s", token.c_str());
+        }
+        die("function: 'end function' required");
+    }
+
+    vector<string> parseFunctionArgs() {
+        if (!read() || token != "(")
+            die("function: '(' required");
+        vector<string> args;
+        while (read()) {
+            if (token == ")")
+                break;
+            else if (type == Word) {
+                args.push_back(token);
+                if (read()) {
+                    if (token == ")")
+                        break;
+                    else if (token == ",")
+                        continue;
+                }
+                die("function: ',' or ')' required");
+            }
+            else
+                die("function: argument required");
+        }
+        return args;
+    }
+};
 
 int main(int argc, char *argv[])
 {
@@ -198,9 +265,8 @@ int main(int argc, char *argv[])
     call(ptr[pe.import("msvcrt.dll", "exit")]);
     jmp(curtext->addr());
 
-    for (int i = 1; i < argc; i++) {
-        parse(argv[i]);
-    }
+    for (int i = 1; i < argc; i++)
+        Parser(argv[i]).parse();
     link();
 
     auto exe = "output.exe";
