@@ -157,6 +157,7 @@ void push(Address ad);
 void push(Ptr p);
 void call(Ptr p);
 void call(Address ad);
+void jmp (Ptr p);
 void jmp (Address ad);
 void jc  (Address ad);
 void jnc (Address ad);

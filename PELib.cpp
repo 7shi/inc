@@ -406,6 +406,7 @@ void push(Address ad) { *curtext << 0x68 << ad; }
 void push(Ptr p) { *curtext << 0xff << 0x35 << p.val; }
 void call(Ptr p) { *curtext << 0xff << 0x15 << p.val; }
 void call(Address ad) { *curtext << 0xe8 << Address(ad.addr, Rel); }
+void jmp (Ptr p) { *curtext << 0xff << 0x25 << p.val; }
 void jmp (Address ad) { *curtext << 0xe9 << Address(ad.addr, Rel); }
 void jc  (Address ad) { *curtext << 0x0f << 0x82 << Address(ad.addr, Rel); }
 void jnc (Address ad) { *curtext << 0x0f << 0x83 << Address(ad.addr, Rel); }
