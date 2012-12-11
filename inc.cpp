@@ -207,6 +207,8 @@ public:
                 parseFunction();
             else if (token == "class")
                 parseClass();
+            else if (token == "import")
+                parseImport();
             else
                 die("error: %s", token.c_str());
         }
@@ -346,6 +348,20 @@ private:
             else
                 die("error: %s", token.c_str());
         }
+    }
+
+    void parseImport() {
+        if (!read() || type != Str)
+            die("import: dll name required");
+        auto dll = getstr(token);
+        if (!read() || type != Word)
+            die("import: calling convention required");
+        if (token != "cdecl")
+            die("import: not supported: %s", token.c_str());
+        if (!read() || type != Word)
+            die("import: function name required");
+        curtext->put(func(token));
+        jmp(ptr[pe.import(dll, token)]);
     }
 };
 
