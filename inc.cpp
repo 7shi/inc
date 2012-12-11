@@ -8,7 +8,7 @@ static PE pe;
 
 void vdie(const string &src, int line, int column, const char *format, va_list arg) {
     if (line > 0)
-        fprintf(stderr, "%s[%d,%d] ", src.c_str(), line, column);
+        fprintf(stderr, "%s[%d:%d] ", src.c_str(), line, column);
     vfprintf(stderr, format, arg);
     fprintf(stderr, "\n");
     exit(1);
@@ -17,7 +17,7 @@ void vdie(const string &src, int line, int column, const char *format, va_list a
 void die(const string &src, int line, int column, const char *format, ...) {
     va_list arg;
     va_start(arg, format);
-    die(src, line, column, format, arg);
+    vdie(src, line, column, format, arg);
     va_end(arg);
 }
 
@@ -25,6 +25,10 @@ struct Symbol {
     string src;
     int line = 0, column = 0;
     Address addr;
+
+    void clear() {
+        *addr.addr = 0;
+    }
 
     void die(const char *format, ...) {
         va_list arg;
@@ -40,11 +44,26 @@ bool operator!(const Symbol &sym) {
 
 map<string, Symbol> funcs;
 
+Address func(const string &name, const string &src = "", int line = 0, int column = 0) {
+    if (funcs.find(name) == funcs.end()) {
+        Symbol sym;
+        sym.src = src;
+        sym.addr = pe.sym(name, true);
+        sym.line = line;
+        sym.column = column;
+        funcs[name] = sym;
+    }
+    return funcs[name].addr;
+}
+
 void link() {
+    for (auto p: funcs) p.second.clear();
     pe.link();
     for (auto p: funcs) {
+        auto name = p.first.c_str();
         auto sym = p.second;
-        if (!sym) sym.die("undefined: %s", p.first.c_str());
+        if (!sym) sym.die("undefined: %s", name);
+        printf("%x: %s\n", *sym.addr.addr, name);
     }
 }
 
@@ -75,7 +94,7 @@ public:
         if (!file) cur = -1;
         if (cur < 0) return cur;
         cur = fgetc(file);
-        curcol++;
+        ++curcol;
         if (cur == '\n') { ++curline; curcol = 0; }
         return cur;
     }
@@ -109,7 +128,7 @@ public:
                     else if (esc)
                         esc = false;
                     else if (ch == '"')
-                        dq++;
+                        ++dq;
                     else if (ch == '\\')
                         esc = true;
                     return true;
@@ -138,26 +157,12 @@ private:
     }
 };
 
-Address func(const string &src, Lexer *lexer = NULL) {
-    if (funcs.find(src) == funcs.end()) {
-        Symbol sym;
-        sym.src = src;
-        sym.addr = pe.sym(src, true);
-        if (lexer) {
-            sym.line = lexer->line;
-            sym.column = lexer->column;
-        }
-        funcs[src] = sym;
-    }
-    return funcs[src].addr;
-}
-
 string getstr(string s) {
     if (s.size() >= 2 && s[0] == '"' && s[1] == '"')
         s = s.substr(1, s.size() - 2);
     string ret;
     bool esc = false;
-    for (size_t i = 0; i < s.size(); i++) {
+    for (int i = 0; i < s.size(); ++i) {
         char ch = s[i];
         if (esc) {
             switch (ch) {
@@ -178,6 +183,12 @@ string getstr(string s) {
             ret += ch;
     }
     return ret;
+}
+
+template <typename T> int index(const vector<T> &vec, const T &v) {
+    for (int i = 0; i < vec.size(); ++i)
+        if (vec[i] == v) return i;
+    return -1;
 }
 
 class Parser {
@@ -213,18 +224,46 @@ private:
         return true;
     }
 
-    void parseFunction() {
+    void parseFunction(const string &prefix = "") {
         if (!read() || type != Word)
             die("function: name required");
         curtext->put(func(token));
+        push(ebp);
+        mov(ebp, esp);
         auto args = parseFunctionArgs();
+        bool epi = false;
         while (read()) {
             if (token == "end") {
                 if (read() && token == "function") {
-                    ret();
+                    if (!epi) {
+                        leave();
+                        ret();
+                    }
                     return;
                 }
                 die("end: 'function' required");
+            }
+            else if (type == Word) {
+                epi = false;
+                int l = lexer.line, c = lexer.column;
+                auto t = token;
+                if (t == "return") {
+                    if (read() && type == Num) {
+                        mov(eax, atoi(token.c_str()));
+                        leave();
+                        ret();
+                        epi = true;
+                        continue;
+                    }
+                } else if (read()) {
+                    if (token == "(") {
+                        int nargs = parseCallArgs(args);
+                        call(func(t, lexer.src, l, c));
+                        if (nargs > 0) add(esp, 4 * nargs);
+                        continue;
+                    }
+                }
+                ::die(lexer.src, l, c, "error: %s", t.c_str());
             }
             else
                 die("error: %s", token.c_str());
@@ -254,18 +293,54 @@ private:
         }
         return args;
     }
+
+    int parseCallArgs(const vector<string> &args) {
+        int ret = 0;
+        while (read()) {
+            if (token == ")")
+                break;
+            else if (type == Word) {
+                int arg = index(args, token);
+                if (arg == -1)
+                    die("undefined variable: %s", token.c_str());
+                // TODO: push(ptr[ebp+X]);
+                mov(eax, ebp);
+                add(eax, (arg + 1) * 4);
+                push(ptr[eax]);
+                ++ret;
+            }
+            else if (type == Num) {
+                push(atoi(token.c_str()));
+                ++ret;
+            }
+            else if (type == Str) {
+                push(pe.str(getstr(token)));
+                ++ret;
+            }
+            else
+                die("function: argument required");
+            if (read()) {
+                if (token == ")")
+                    break;
+                else if (token == ",")
+                    continue;
+            }
+            die("function: ',' or ')' required");
+        }
+    }
 };
 
 int main(int argc, char *argv[])
 {
     pe.select();
 
+    curtext->put(func("_start"));
     call(func("main"));
     push(eax);
     call(ptr[pe.import("msvcrt.dll", "exit")]);
     jmp(curtext->addr());
 
-    for (int i = 1; i < argc; i++)
+    for (int i = 1; i < argc; ++i)
         Parser(argv[i]).parse();
     link();
 
