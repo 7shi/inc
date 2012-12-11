@@ -10,32 +10,30 @@ enum Token { Word, Num, Str, Other };
 class Lexer {
 private:
     FILE *file;
-    int cur = -1;
+    int cur = 0;
     string src;
-    int curline = 1;
+    int curline = 1, curcol = 0;
 
 public:
     Token type = Other;
     string token;
-    int line = 1;
-
-    Lexer(FILE *file): file(file) {
-        if (file) cur = fgetc(file);
-    }
+    int line = 1, column = 0;
 
     Lexer(const string &src): src(src) {
         file = fopen(src.c_str(), "r");
-        if (file) cur = fgetc(file);
+        readc();
     }
 
     ~Lexer() {
-        if (!src.empty() && file) fclose(file);
+        if (file) fclose(file);
     }
 
     int readc() {
+        if (!file) cur = -1;
         if (cur < 0) return cur;
         cur = fgetc(file);
-        if (cur == '\n') ++curline;
+        if (cur == '\n') { ++curline; curcol = 0; }
+        curcol++;
         return cur;
     }
 
@@ -54,7 +52,6 @@ public:
     }
 
     bool read() {
-        line = curline;
         while (cur >= 0) {
             if (isalpha(cur))
                 return read(Word, isletter);
@@ -86,6 +83,8 @@ public:
 
 private:
     bool read(Token t, function<bool(int)> f) {
+        line = curline;
+        column = curcol;
         type = t;
         token.clear();
         while (f(cur)) {
@@ -127,7 +126,9 @@ string getstr(string s) {
 void parse(const string &src) {
     Lexer lexer(src);
     while (lexer.read()) {
-        printf("%s:%d %d:%s\n", src.c_str(), lexer.line, lexer.type, lexer.token.c_str());
+        printf("%s[%d,%d] %d:%s\n",
+            src.c_str(), lexer.line, lexer.column,
+            lexer.type, lexer.token.c_str());
     }
 }
 
