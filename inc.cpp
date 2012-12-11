@@ -57,6 +57,7 @@ Address func(const string &name, const string &src = "", int line = 0, int colum
 }
 
 void link() {
+    puts("linking...");
     for (auto p: funcs) p.second.clear();
     pe.link();
     for (auto p: funcs) {
