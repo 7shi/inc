@@ -24,6 +24,7 @@ template <typename T> struct Wrap {
     T val;
     Wrap(T val): val(val) {}
 };
+typedef Wrap< BYTE> u1;
 typedef Wrap< WORD> u2;
 typedef Wrap<DWORD> u4;
 typedef Wrap<Address> Ptr;
@@ -139,8 +140,9 @@ struct {
     }
 } ptr;
 
-void ret();
 void nop();
+void ret();
+void leave();
 void mov(reg32 r1, reg32 r2);
 void mov(reg32 r, DWORD v);
 void mov(reg32 r, Address ad);
@@ -155,6 +157,7 @@ void push(reg32 r);
 void push(DWORD v);
 void push(Address ad);
 void push(Ptr p);
+void push(Wrap<reg32> p);
 void call(Ptr p);
 void call(Address ad);
 void jmp (Ptr p);

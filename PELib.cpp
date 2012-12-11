@@ -379,8 +379,9 @@ void PE::mkidata() {
 }
 
 
-void ret() { *curtext << 0xc3; }
 void nop() { *curtext << 0x90; }
+void ret() { *curtext << 0xc3; }
+void leave() { *curtext << 0xc9; }
 void mov(reg32 r1, reg32 r2) { *curtext << 0x89 << 0xc0 + r1 + (r2 << 3); }
 void mov(reg32 r, DWORD v) { *curtext << 0xb8 + r << &v; }
 void mov(reg32 r, Address ad) { *curtext << 0xb8 + r << ad; }
@@ -404,6 +405,13 @@ void push(reg32 r) { *curtext << 0x50 + r; }
 void push(DWORD v) { *curtext << 0x68 << &v; }
 void push(Address ad) { *curtext << 0x68 << ad; }
 void push(Ptr p) { *curtext << 0xff << 0x35 << p.val; }
+void push(Wrap<reg32> p) {
+    switch (p.val) {
+    case esp: *curtext << 0xff << 0x34 << 0x24; break;
+    case ebp: *curtext << 0xff << 0x75 << u1(0); break;
+    default : *curtext << 0xff << 0x30 + p.val; break;
+    }
+}
 void call(Ptr p) { *curtext << 0xff << 0x15 << p.val; }
 void call(Address ad) { *curtext << 0xe8 << Address(ad.addr, Rel); }
 void jmp (Ptr p) { *curtext << 0xff << 0x25 << p.val; }
