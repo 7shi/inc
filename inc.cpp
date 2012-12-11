@@ -384,4 +384,5 @@ int main(int argc, char *argv[])
     if (!f) die("", 0, 0, "can not open: %s", exe);
     pe.write(f);
     fclose(f);
+    printf("output: %s\n", exe);
 }
