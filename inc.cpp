@@ -204,6 +204,8 @@ public:
         while (read()) {
             if (token == "function")
                 parseFunction();
+            else if (token == "class")
+                parseClass();
             else
                 die("error: %s", token.c_str());
         }
@@ -227,7 +229,7 @@ private:
     void parseFunction(const string &prefix = "") {
         if (!read() || type != Word)
             die("function: name required");
-        curtext->put(func(token));
+        curtext->put(func(prefix + token));
         push(ebp);
         mov(ebp, esp);
         auto args = parseFunctionArgs();
@@ -326,6 +328,22 @@ private:
                     continue;
             }
             die("function: ',' or ')' required");
+        }
+    }
+
+    void parseClass() {
+        if (!read() || type != Word)
+            die("class: name required");
+        auto name = token;
+        while (read()) {
+            if (token == "end") {
+                if (read() && token == "class") return;
+                die("end: 'class' required");
+            }
+            else if (token == "function")
+                parseFunction(name + "'");
+            else
+                die("error: %s", token.c_str());
         }
     }
 };
