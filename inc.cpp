@@ -303,29 +303,18 @@ private:
         return args;
     }
 
-    int parseCallArgs(const vector<string> &args) {
-        int ret = 0;
+    int parseCallArgs(const vector<string> &fargs) {
+        list<pair<Token, string>> args;
         while (read()) {
             if (token == ")")
                 break;
             else if (type == Word) {
-                int arg = index(args, token);
+                int arg = index(fargs, token);
                 if (arg == -1)
                     die("undefined variable: %s", token.c_str());
-                // TODO: push(ptr[ebp+X]);
-                mov(eax, ebp);
-                add(eax, (arg + 2) * 4);
-                push(ptr[eax]);
-                ++ret;
-            }
-            else if (type == Num) {
-                push(atoi(token.c_str()));
-                ++ret;
-            }
-            else if (type == Str) {
-                push(pe.str(getstr(token)));
-                ++ret;
-            }
+                args.push_front(make_pair(type, token));
+            } else if (type == Num || type == Str)
+                args.push_front(make_pair(type, token));
             else
                 die("function: argument required");
             if (read()) {
@@ -336,6 +325,23 @@ private:
             }
             die("function: ',' or ')' required");
         }
+        for (auto p: args) {
+            switch (p.first) {
+            case Word:
+                // TODO: push(ptr[ebp+X]);
+                mov(eax, ebp);
+                add(eax, (index(fargs, p.second) + 2) * 4);
+                push(ptr[eax]);
+                break;
+            case Num:
+                push(atoi(p.second.c_str()));
+                break;
+            case Str:
+                push(pe.str(getstr(p.second)));
+                break;
+            }
+        }
+        return args.size();
     }
 
     void parseClass() {
