@@ -75,8 +75,8 @@ public:
         if (!file) cur = -1;
         if (cur < 0) return cur;
         cur = fgetc(file);
-        if (cur == '\n') { ++curline; curcol = 0; }
         curcol++;
+        if (cur == '\n') { ++curline; curcol = 0; }
         return cur;
     }
 
