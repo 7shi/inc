@@ -138,8 +138,7 @@ public:
                         esc = true;
                     return true;
                 });
-            }
-            else if (cur > ' ') {
+            } else if (cur > ' ') {
                 int c = 0;
                 return read(Other, [&](int) { return c++ < 1; });
             }
@@ -181,8 +180,7 @@ string getstr(string s) {
             default : ret += ch  ; break;
             }
             esc = false;
-        }
-        else if (ch == '\\')
+        } else if (ch == '\\')
             esc = true;
         else
             ret += ch;
@@ -251,8 +249,7 @@ private:
                     return;
                 }
                 die("end: 'function' required");
-            }
-            else if (type == Word) {
+            } else if (type == Word) {
                 epi = false;
                 int l = lexer.line, c = lexer.column;
                 auto t = token;
@@ -273,8 +270,7 @@ private:
                     }
                 }
                 ::die(lexer.src, l, c, "error: %s", t.c_str());
-            }
-            else
+            } else
                 die("error: %s", token.c_str());
         }
         die("function: 'end function' required");
@@ -296,8 +292,7 @@ private:
                         continue;
                 }
                 die("function: ',' or ')' required");
-            }
-            else
+            } else
                 die("function: argument required");
         }
         return args;
@@ -352,8 +347,7 @@ private:
             if (token == "end") {
                 if (read() && token == "class") return;
                 die("end: 'class' required");
-            }
-            else if (token == "function")
+            } else if (token == "function")
                 parseFunction(name + "'");
             else
                 die("error: %s", token.c_str());
@@ -375,8 +369,7 @@ private:
     }
 };
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     pe.select();
 
     curtext->put(func("_start"));
