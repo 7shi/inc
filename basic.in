@@ -1,9 +1,9 @@
 class basic
-	method println(arg)
+	function println(arg)
 		puts(arg)
-	end method
+	end function
 
-	method getline()
+	function getline()
 		getchar()
-	end method
+	end function
 end class
