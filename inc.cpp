@@ -159,7 +159,7 @@ private:
 };
 
 string getstr(string s) {
-    if (s.size() >= 2 && s[0] == '"' && s[1] == '"')
+    if (s.size() >= 2 && s[0] == '"' && s[s.size() - 1] == '"')
         s = s.substr(1, s.size() - 2);
     string ret;
     bool esc = false;
