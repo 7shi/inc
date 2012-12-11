@@ -308,7 +308,7 @@ private:
                     die("undefined variable: %s", token.c_str());
                 // TODO: push(ptr[ebp+X]);
                 mov(eax, ebp);
-                add(eax, (arg + 1) * 4);
+                add(eax, (arg + 2) * 4);
                 push(ptr[eax]);
                 ++ret;
             }
