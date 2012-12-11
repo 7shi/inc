@@ -203,8 +203,9 @@ int main(int argc, char *argv[])
     }
     link();
 
-    auto f = fopen("output.exe", "wb");
-    if (!f) return 1;
+    auto exe = "output.exe";
+    auto f = fopen(exe, "wb");
+    if (!f) die("", 0, 0, "can not open: %s", exe);
     pe.write(f);
     fclose(f);
 }
