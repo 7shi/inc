@@ -36,11 +36,9 @@ struct Symbol {
         vdie(src, line, column, format, arg);
         va_end(arg);
     }
-};
 
-bool operator!(const Symbol &sym) {
-    return !*sym.addr.addr;
-}
+    DWORD operator *() const { return *addr.addr; }
+};
 
 map<string, Symbol> funcs;
 
@@ -63,8 +61,8 @@ void link() {
     for (auto p: funcs) {
         auto name = p.first.c_str();
         auto sym = p.second;
-        if (!sym) sym.die("undefined: %s", name);
-        printf("%x: %s\n", *sym.addr.addr, name);
+        if (!*sym) sym.die("undefined: %s", name);
+        printf("%x: %s\n", *sym, name);
     }
 }
 
