@@ -1,9 +1,52 @@
 #include "PELib.h"
+#include <cstdarg>
 #include <functional>
 
 using namespace std;
 
 static PE pe;
+
+void vdie(const string &src, int line, int column, const char *format, va_list arg) {
+    if (line > 0)
+        fprintf(stderr, "%s[%d,%d] ", src.c_str(), line, column);
+    vfprintf(stderr, format, arg);
+    fprintf(stderr, "\n");
+    exit(1);
+}
+
+void die(const string &src, int line, int column, const char *format, ...) {
+    va_list arg;
+    va_start(arg, format);
+    die(src, line, column, format, arg);
+    va_end(arg);
+}
+
+struct Symbol {
+    string src;
+    int line = 0, column = 0;
+    Address addr;
+
+    void die(const char *format, ...) {
+        va_list arg;
+        va_start(arg, format);
+        vdie(src, line, column, format, arg);
+        va_end(arg);
+    }
+};
+
+bool operator!(const Symbol &sym) {
+    return !*sym.addr.addr;
+}
+
+map<string, Symbol> funcs;
+
+void link() {
+    pe.link();
+    for (auto p: funcs) {
+        auto sym = p.second;
+        if (!sym) sym.die("undefined: %s", p.first.c_str());
+    }
+}
 
 enum Token { Word, Num, Str, Other };
 
@@ -95,6 +138,20 @@ private:
     }
 };
 
+Address func(const string &src, Lexer *lexer = NULL) {
+    if (funcs.find(src) == funcs.end()) {
+        Symbol sym;
+        sym.src = src;
+        sym.addr = pe.sym(src, true);
+        if (lexer) {
+            sym.line = lexer->line;
+            sym.column = lexer->column;
+        }
+        funcs[src] = sym;
+    }
+    return funcs[src].addr;
+}
+
 string getstr(string s) {
     if (s.size() >= 2 && s[0] == '"' && s[1] == '"')
         s = s.substr(1, s.size() - 2);
@@ -136,18 +193,15 @@ int main(int argc, char *argv[])
 {
     pe.select();
 
-    auto _main = pe.sym("main", true);
-    call(_main);
+    call(func("main"));
     push(eax);
     call(ptr[pe.import("msvcrt.dll", "exit")]);
     jmp(curtext->addr());
-    
-    curtext->put(_main);
-    ret();
 
     for (int i = 1; i < argc; i++) {
         parse(argv[i]);
     }
+    link();
 
     auto f = fopen("output.exe", "wb");
     if (!f) return 1;
