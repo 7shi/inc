@@ -1,5 +1,6 @@
 #include "PELib.h"
 #include <cstdarg>
+#include <list>
 #include <functional>
 
 using namespace std;
@@ -58,12 +59,17 @@ void link() {
     puts("linking...");
     for (auto p: funcs) p.second.clear();
     pe.link();
+    list<pair<string, Symbol>> syms;
     for (auto p: funcs) {
-        auto name = p.first.c_str();
         auto sym = p.second;
-        if (!*sym) sym.die("undefined: %s", name);
-        printf("%x: %s\n", *sym, name);
+        if (!*sym) sym.die("undefined: %s", p.first.c_str());
+        syms.push_back(p);
     }
+    syms.sort([](const pair<string, Symbol> &p1, const pair<string, Symbol> &p2) {
+        return *p1.second < *p2.second;
+    });
+    for (auto p: syms)
+        printf("%x: %s\n", *p.second, p.first.c_str());
 }
 
 enum Token { Word, Num, Str, Other };
